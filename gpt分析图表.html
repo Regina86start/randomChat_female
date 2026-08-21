@@ -287,7 +287,7 @@
     <a href="#s2">二 全链路漏斗</a>
     <a href="#s3">三 坐等 vs 开播</a>
     <a href="#s4">四 坐等价值</a>
-    <a href="#s5">五 坐等被叫分布</a>
+    <a href="#s5">五 坐等来电分布</a>
     <a href="#s6">六 50-女分层行为</a>
     <a href="#s7">七 建议优化</a>
   </nav>
@@ -317,7 +317,7 @@
         <tbody>
           <tr class="hot"><td>50-女</td><td>随机匹配</td><td>停留首页5秒后</td><td>5min</td><td>最多5次</td></tr>
           <tr><td>50-100女</td><td>去直播</td><td>停留首页5秒后</td><td>5min</td><td>最多5次</td></tr>
-          <tr><td>大于100女</td><td>无</td><td>无</td><td>无</td><td>无</td></tr>
+          <tr><td>100+女</td><td>无</td><td>无</td><td>无</td><td>无</td></tr>
         </tbody>
       </table>
       <div class="shots">
@@ -481,12 +481,12 @@
 
     <section class="part" id="s5">
       <div class="part-head">
-        <h2>五、坐等女的被叫分布</h2>
-        <div class="sub">分母是坐等女。坐等被叫 = receive_type=12；其他被叫 = 除了坐等场景的电话。</div>
+        <h2>五、坐等女的来电分布</h2>
+        <div class="sub">分母是坐等女。坐等来电 = receive_type=12；其他来电 = 除了坐等场景的电话。</div>
       </div>
       <div class="h3">四格结构（占该档坐等女）</div>
       <div class="chart-box tall"><canvas id="cMix"></canvas></div>
-      <div class="callout c"><b>结论：</b>50-女坐等中，约一半当天两种被叫都没有，是真正的空坐。只坐等被叫仅 46 人（0.7%），坐等不是主要被叫入口。</div>
+      <div class="callout c"><b>结论：</b>50-女坐等中，约一半当天两种来电都没有，是真正的空坐。只坐等来电仅 46 人（0.7%），坐等不是主要视频聊入口。</div>
     </section>
 
     <section class="part" id="s6">
@@ -569,7 +569,7 @@ new Chart(document.getElementById('cWaitLive'), {
     labels,
     datasets: [
       { label: '坐等率', data: [0.1467, 0.0703, 0.0438], backgroundColor: T50, maxBarThickness: 28 },
-      { label: '开播率', data: [0.1311, 0.4724, 0.5784], backgroundColor: T100, maxBarThickness: 28 }
+      { label: '开播率', data: [0.1267, 0.4723, 0.5786], backgroundColor: T100, maxBarThickness: 28 }
     ]
   },
   options: {
@@ -577,11 +577,15 @@ new Chart(document.getElementById('cWaitLive'), {
     layout: { padding: { top: 18 } },
     plugins: {
       legend: { position: 'top', align: 'center', labels: { boxWidth: 12, font: { size: 13 } } },
-      tooltip: pctTip,
+      tooltip: {
+        callbacks: {
+          label(ctx) { return ctx.dataset.label + ': ' + fmtPct(ctx.raw, 2); }
+        }
+      },
       datalabels: {
         color: '#334155', font: { size: 13, weight: '600' },
         anchor: 'end', align: 'top', offset: 2, clamp: true,
-        formatter: v => fmtPct(v, 1)
+        formatter: v => fmtPct(v, 2)
       }
     },
     scales: { y: yAxis(0.72), x: xAxis }
@@ -651,8 +655,8 @@ new Chart(document.getElementById('cMix'), {
   data: {
     labels,
     datasets: [
-      { label: '只坐等被叫', data: [0.007, 0.0007, 0.0913], backgroundColor: '#fdba74' },
-      { label: '只其他被叫', data: [0.451, 0.580, 0.3389], backgroundColor: TMID },
+      { label: '只坐等来电', data: [0.007, 0.0007, 0.0913], backgroundColor: '#fdba74' },
+      { label: '只其他来电', data: [0.451, 0.580, 0.3389], backgroundColor: TMID },
       { label: '两种都有', data: [0.0431, 0.0375, 0.2989], backgroundColor: T100 },
       { label: '两种都无', data: [0.4984, 0.3815, 0.2717], backgroundColor: T50 }
     ]
