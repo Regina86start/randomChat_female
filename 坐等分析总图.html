@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>50-女坐等摸底 · 近一月日均</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+  <style>
+    :root {
+      --bg: #eef2f6;
+      --surface: #ffffff;
+      --ink: #0f1c2e;
+      --muted: #64748b;
+      --line: #e2e8f0;
+      --t50: #ea580c;
+      --tmid: #1d4ed8;
+      --t100: #0f766e;
+      --ok: #15803d;
+      --warm-bg: #fff7ed;
+      --warm-bd: #fed7aa;
+      --warm-ink: #9a3412;
+      --insight-bg: #f0f9ff;
+      --insight-bd: #bae6fd;
+      --insight-ink: #0c4a6e;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      background: var(--bg); color: var(--ink); line-height: 1.5;
+      font-size: 13px;
+    }
+    .layout { display: flex; min-height: 100vh; }
+    .side {
+      position: sticky; top: 0; align-self: flex-start;
+      width: 176px; flex-shrink: 0; height: 100vh; overflow-y: auto;
+      background: #e4e9ef; border-right: 1px solid var(--line);
+      padding: 16px 0 24px; z-index: 30;
+    }
+    .side .brand {
+      padding: 0 14px 14px; font-size: 12px; font-weight: 700;
+      border-bottom: 1px solid var(--line); margin-bottom: 10px; line-height: 1.35;
+    }
+    .side .brand span { display: block; font-size: 11px; font-weight: 500; color: var(--muted); margin-top: 2px; }
+    .side a {
+      display: block; padding: 7px 14px 7px 12px; margin: 1px 8px;
+      font-size: 12.5px; color: var(--muted); text-decoration: none;
+      border-radius: 6px; border-left: 3px solid transparent;
+    }
+    .side a:hover { background: rgba(255,255,255,.75); color: var(--ink); }
+    .side a.on { background: var(--surface); color: var(--t100); font-weight: 600; border-left-color: var(--t100); }
+    .main { flex: 1; min-width: 0; padding: 24px 24px 56px; }
+    .wrap { max-width: 1100px; margin: 0 auto; }
+    .page-title { font-size: 24px; font-weight: 700; letter-spacing: -.02em; margin-bottom: 6px; }
+    .page-meta { font-size: 12px; color: var(--muted); margin-bottom: 20px; }
+    .part {
+      margin-bottom: 20px; padding: 20px 22px 18px;
+      background: var(--surface); border: 1px solid var(--line); border-radius: 12px;
+      scroll-margin-top: 16px;
+    }
+    .part-head { margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--line); }
+    .part-head h2 { font-size: 18px; font-weight: 700; margin: 0 0 4px; }
+    .part-head .sub { font-size: 12px; color: var(--muted); }
+    .h3 {
+      font-size: 13px; font-weight: 700; margin: 14px 0 8px;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .h3::before { content: ""; width: 3px; height: 13px; background: var(--t100); border-radius: 2px; }
+    .kpi-strip {
+      display: grid; grid-template-columns: repeat(4, 1fr);
+      background: #f8fafc; border: 1px solid var(--line); border-radius: 10px; overflow: hidden;
+    }
+    .kpi-strip.cols-3 { grid-template-columns: repeat(3, 1fr); }
+    .kpi { padding: 12px 14px; border-right: 1px solid var(--line); min-width: 0; }
+    .kpi:last-child { border-right: none; }
+    .kpi .lab { font-size: 11px; color: var(--muted); margin-bottom: 3px; }
+    .kpi .val { font-size: 20px; font-weight: 700; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+    .kpi .val.w { color: var(--t50); }
+    .kpi .val.a { color: var(--t100); }
+    .kpi .sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+    .chart-box { position: relative; height: 260px; }
+    .chart-box.h200 { height: 200px; }
+    .chart-box.h300 { height: 300px; }
+    .note { font-size: 12px; color: var(--muted); margin-top: 8px; }
+    .callout {
+      margin-top: 12px; padding: 10px 12px; border-radius: 8px;
+      background: var(--insight-bg); border: 1px solid var(--insight-bd); color: var(--insight-ink);
+      font-size: 12.5px;
+    }
+    .callout.warn { background: var(--warm-bg); border-color: var(--warm-bd); color: var(--warm-ink); }
+    table.data { width: 100%; border-collapse: collapse; font-size: 12px; font-variant-numeric: tabular-nums; }
+    table.data th, table.data td { padding: 6px 8px; border-bottom: 1px solid var(--line); text-align: right; }
+    table.data th { background: #f8fafc; font-weight: 600; color: var(--muted); text-align: right; }
+    table.data th:first-child, table.data td:first-child { text-align: left; }
+    .legend { display: flex; gap: 14px; font-size: 12px; color: var(--muted); margin: 6px 0 10px; }
+    .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 4px; }
+    @media (max-width: 900px) {
+      .side { display: none; }
+      .grid2, .grid3, .kpi-strip, .kpi-strip.cols-3 { grid-template-columns: 1fr; }
+      .kpi { border-right: none; border-bottom: 1px solid var(--line); }
+    }
+  </style>
+</head>
+<body>
+<div class="layout">
+  <nav class="side">
+    <div class="brand">50-女坐等摸底<span>近一月日均 · 20260718–20260817</span></div>
+    <a href="#s0" class="on">总判</a>
+    <a href="#s1">1 坐等分布</a>
+    <a href="#s2">2 接通</a>
+    <a href="#s3">3 漏斗</a>
+    <a href="#s4">4 坐等×开播</a>
+    <a href="#s5">5 注册当天</a>
+    <a href="#s6">6 接通金豆</a>
+    <a href="#s7">7 结束原因</a>
+    <a href="#s8">8 人均次数</a>
+    <a href="#s9">9 接通厚度</a>
+    <a href="#s10">10 其他视频聊</a>
+    <a href="#s11">11 注册后天数</a>
+  </nav>
+  <div class="main"><div class="wrap">
+
+    <h1 class="page-title">50-女坐等摸底</h1>
+    <p class="page-meta">
+      <span>近一月日均 31 天</span>
+      <span>分档用当日 history_earn</span>
+      <span>只能看坐等结果，不能证明弹窗因果</span>
+    </p>
+    <div class="legend">
+      <span><i style="background:#ea580c"></i>50-女</span>
+      <span><i style="background:#1d4ed8"></i>50–100女</span>
+      <span><i style="background:#0f766e"></i>100+女</span>
+    </div>
+
+    <section class="part" id="s0">
+      <div class="part-head">
+        <h2>总判</h2>
+        <div class="sub">50- 的坐等是高进、低转化、低赚取的空路径。详细口径与推不出项见 坐等分析总表.md</div>
+      </div>
+      <div class="kpi-strip">
+        <div class="kpi"><div class="lab">50- 坐等率</div><div class="val w">14.67%</div><div class="sub">100+ 仅 4.38%</div></div>
+        <div class="kpi"><div class="lab">50- 坐等到被打到</div><div class="val w">5.04%</div><div class="sub">100+ 为 38.55%</div></div>
+        <div class="kpi"><div class="lab">只坐等不开播</div><div class="val w">10.19%</div><div class="sub">另外两档约 1.5%</div></div>
+        <div class="kpi"><div class="lab">50- 坐等接通金豆</div><div class="val">0.57%</div><div class="sub">占三档坐等接通金豆</div></div>
+      </div>
+      <div class="callout">人堆在 50-（坐等女 52.6%），电话和金豆在 100+。配对轮次约九成挂断；约一半 50- 坐等女当天两种被叫都没有。能接通的是 D0，坐得最密的是 D1-7。</div>
+      <div class="callout warn">推不出：弹窗导致坐等；藏匹配后 4,548 人会去开播；坐等金豆低所以开播一定更赚；50- 等于新女。</div>
+    </section>
+
+    <section class="part" id="s1">
+      <div class="part-head">
+        <h2>1. 坐等分布</h2>
+        <div class="sub">50- 坐等率最高，坐等人数也最多（6,550 &gt; 4,523）</div>
+      </div>
+      <div class="grid2">
+        <div>
+          <div class="h3">日均坐等率</div>
+          <div class="chart-box h200"><canvas id="c1rate"></canvas></div>
+        </div>
+        <div>
+          <div class="h3">日均坐等人数</div>
+          <div class="chart-box h200"><canvas id="c1n"></canvas></div>
+        </div>
+      </div>
+      <div class="note">50- 占活跃女 26.6%，占坐等女 52.6%。100+ 活跃盘最大（10.3 万），坐等率最低。</div>
+    </section>
+
+    <section class="part" id="s2">
+      <div class="part-head">
+        <h2>2. 坐等接通</h2>
+        <div class="sub">卡在没人打，不是打了接不上</div>
+      </div>
+      <div class="chart-box"><canvas id="c2hit"></canvas></div>
+      <div class="note">接通 273+47+1,698=2,018 人，50- 只占 13.5%，100+ 占 84.1%。</div>
+    </section>
+
+    <section class="part" id="s3">
+      <div class="part-head">
+        <h2>3. 接通漏斗</h2>
+        <div class="sub">相对上一层。三档掉点都在「坐了没人打」</div>
+      </div>
+      <div class="chart-box h300"><canvas id="c3funnel"></canvas></div>
+      <div class="note">被打到→接通：50- 83.25%、50–100 87.71%、100+ 96.10%。不要把 83% 读成 50- 接聊很好。</div>
+    </section>
+
+    <section class="part" id="s4">
+      <div class="part-head">
+        <h2>4. 坐等 × 开播</h2>
+        <div class="sub">只坐等不开播几乎只出现在 50-。4,548 人是池子，不是转化</div>
+      </div>
+      <div class="grid2">
+        <div>
+          <div class="h3">坐等率 vs 开播率</div>
+          <div class="chart-box"><canvas id="c4rate"></canvas></div>
+        </div>
+        <div>
+          <div class="h3">只坐等不开播占比</div>
+          <div class="chart-box"><canvas id="c4only"></canvas></div>
+        </div>
+      </div>
+      <div class="note">50–100（弹去直播）1.43% 与 100+（不弹）1.54% 接近。异常在匹配弹窗档。</div>
+    </section>
+
+    <section class="part" id="s5">
+      <div class="part-head">
+        <h2>5. 注册当天（只拆 50-）</h2>
+        <div class="sub">接通几乎全在 D0（76.9%）；非当天接通率 1.73%</div>
+      </div>
+      <div class="chart-box"><canvas id="c5"></canvas></div>
+      <div class="note">50- 活跃里约 41% 是注册当天。非当天仍有 3,656 人坐等，空坐不是只发生在首日。</div>
+    </section>
+
+    <section class="part" id="s6">
+      <div class="part-head">
+        <h2>6. 坐等接通金豆</h2>
+        <div class="sub">只计 receive_type=12 接通单。不要用来证明去开播更赚</div>
+      </div>
+      <div class="grid2">
+        <div>
+          <div class="h3">金豆合计结构</div>
+          <div class="chart-box h200"><canvas id="c6pie"></canvas></div>
+        </div>
+        <div>
+          <div class="h3">接通人均金豆</div>
+          <div class="chart-box h200"><canvas id="c6arpu"></canvas></div>
+        </div>
+      </div>
+      <div class="note">100+ 占 98.9%。50- 日均 14.2 万豆、人均 521；100+ 人均 14,371（约 27.6 倍）。</div>
+    </section>
+
+    <section class="part" id="s7">
+      <div class="part-head">
+        <h2>7. 结束原因和时长</h2>
+        <div class="sub">看占配对轮次。坐等轮次/人数是整档合计，三行重复属正常</div>
+      </div>
+      <div class="chart-box"><canvas id="c7stack"></canvas></div>
+      <table class="data" style="margin-top:12px">
+        <thead>
+          <tr><th>档 × 结束</th><th>该码轮次</th><th>占配对</th><th>等待中位数秒</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>50- · 接通结束</td><td>120</td><td>1.05%</td><td>5</td></tr>
+          <tr><td>50- · 主动挂断</td><td>10,458</td><td>91.02%</td><td>15</td></tr>
+          <tr><td>50- · 心跳超时</td><td>910</td><td>7.92%</td><td>82</td></tr>
+          <tr><td>50–100 · 接通结束</td><td>29</td><td>0.65%</td><td>13</td></tr>
+          <tr><td>50–100 · 主动挂断</td><td>4,033</td><td>87.02%</td><td>14</td></tr>
+          <tr><td>50–100 · 心跳超时</td><td>471</td><td>12.32%</td><td>84</td></tr>
+          <tr><td>100+ · 接通结束</td><td>1,392</td><td>1.83%</td><td>90</td></tr>
+          <tr><td>100+ · 主动挂断</td><td>75,380</td><td>93.44%</td><td>15</td></tr>
+          <tr><td>100+ · 心跳超时</td><td>3,354</td><td>4.73%</td><td>84</td></tr>
+        </tbody>
+      </table>
+      <div class="note">配对成功率：50- 93.24%，50–100 92.39%，100+ 75.29%。endCode=1 的秒数是等到被匹配走，不是通话时长。</div>
+    </section>
+
+    <section class="part" id="s8">
+      <div class="part-head">
+        <h2>8. 人均坐等次数</h2>
+        <div class="sub">50- 是浅而广（中位数 1 轮）；100+ 均值 23 是长尾，中位数其实是 3</div>
+      </div>
+      <div class="grid2">
+        <div>
+          <div class="h3">人均坐等轮次：均值 vs 中位数</div>
+          <div class="chart-box"><canvas id="c8round"></canvas></div>
+        </div>
+        <div>
+          <div class="h3">坐等轮次合计结构</div>
+          <div class="chart-box"><canvas id="c8share"></canvas></div>
+        </div>
+      </div>
+      <div class="note">50- 90 分位 3 &lt; 弹窗上限 5，相容但证明不了入口只有弹窗。100+ 贡献 86.2% 的轮次，人数只占 36.3%。</div>
+    </section>
+
+    <section class="part" id="s9">
+      <div class="part-head">
+        <h2>9. 接通单厚度</h2>
+        <div class="sub">100+ 人均金豆高，主要靠 26 次通，不是单场更贵</div>
+      </div>
+      <div class="grid2">
+        <div>
+          <div class="h3">人均通数</div>
+          <div class="chart-box h200"><canvas id="c9cnt"></canvas></div>
+        </div>
+        <div>
+          <div class="h3">场均通话中位数（秒） vs 场均金豆中位数</div>
+          <div class="chart-box h200"><canvas id="c9thick"></canvas></div>
+        </div>
+      </div>
+      <div class="note">50-：273 人、358 单、通话中位数 12 秒、场均金豆中位数 243。50–100 单场最厚（中位数 30 秒 / 602 豆），但只有 47 人。</div>
+    </section>
+
+    <section class="part" id="s10">
+      <div class="part-head">
+        <h2>10. 坐等女当天其他视频聊</h2>
+        <div class="sub">分母是坐等女。其他金豆不是开播金豆</div>
+      </div>
+      <div class="chart-box h300"><canvas id="c10stack"></canvas></div>
+      <div class="note">50- 两种都无 49.84%（3,268 人）；只坐等被叫仅 46 人（0.7%）。坐等金豆 14.2 万 vs 其他路径 2,370 万。</div>
+    </section>
+
+    <section class="part" id="s11">
+      <div class="part-head">
+        <h2>11. 50- 注册后天数</h2>
+        <div class="sub">接通在 D0；坐等率高峰在 D1-7（20.89%），不是 D0</div>
+      </div>
+      <div class="chart-box"><canvas id="c11"></canvas></div>
+      <div class="note">D0 拿走接通的 76.9%。D1 之后坐等到被打到只剩约 2.1%。D1-7 开播率也最高（24.95%），是双轨都高、坐等几乎接不到。</div>
+    </section>
+
+  </div></div>
+</div>
+<script>
+Chart.register(ChartDataLabels);
+const T50 = '#ea580c', TMID = '#1d4ed8', T100 = '#0f766e';
+const labels = ['50-女', '50–100女', '100+女'];
+const colors = [T50, TMID, T100];
+Chart.defaults.font.family = '"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif';
+Chart.defaults.font.size = 11;
+Chart.defaults.color = '#64748b';
+Chart.defaults.plugins.legend.labels.boxWidth = 10;
+function fmtPct(v) {
+  return (v * 100).toFixed(2) + '%';
+}
+function fmtNum(v) {
+  return typeof v === 'number' ? v.toLocaleString('zh-CN') : v;
+}
+function pctLabel(ctx) {
+  const v = ctx.parsed.y;
+  const name = ctx.dataset.label ? ctx.dataset.label + '：' : '';
+  return name + fmtPct(v);
+}
+function numLabel(ctx) {
+  const v = ctx.parsed.y;
+  const name = ctx.dataset.label ? ctx.dataset.label + '：' : '';
+  return name + fmtNum(v);
+}
+const pctTip = { callbacks: { label: pctLabel } };
+const numTip = { callbacks: { label: numLabel } };
+
+function bar(id, data, extra) {
+  const isPct = extra && extra.pct;
+  return new Chart(document.getElementById(id), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        data,
+        backgroundColor: colors,
+        borderRadius: 4,
+        maxBarThickness: 42
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: isPct ? pctLabel : numLabel } },
+        datalabels: {
+          anchor: 'end', align: 'top',
+          color: '#0f1c2e', font: { weight: '600', size: 11 },
+          formatter: (v) => isPct ? fmtPct(v) : fmtNum(v)
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true, grid: { color: '#eef2f6' },
+          ticks: extra && extra.pct ? { callback: (v) => (v * 100).toFixed(0) + '%' } : {}
+        },
+        x: { grid: { display: false } }
+      }
+    }
+  });
+}
+
+bar('c1rate', [0.1467, 0.0703, 0.0438], { pct: true });
+bar('c1n', [6550, 1387, 4523]);
+
+new Chart(document.getElementById('c2hit'), {
+  type: 'bar',
+  data: {
+    labels,
+    datasets: [
+      { label: '被打到率', data: [0.0504, 0.0385, 0.3855], backgroundColor: '#94a3b8', borderRadius: 4, maxBarThickness: 28 },
+      { label: '接通率', data: [0.0419, 0.0337, 0.3707], backgroundColor: colors, borderRadius: 4, maxBarThickness: 28 }
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: {
+      datalabels: { display: false },
+      legend: { position: 'top' },
+      tooltip: pctTip
+    },
+    scales: {
+      y: { beginAtZero: true, ticks: { callback: (v) => (v * 100).toFixed(0) + '%' }, grid: { color: '#eef2f6' } },
+      x: { grid: { display: false } }
+    }
+  }
+});
+
+new Chart(document.getElementById('c3funnel'), {
+  type: 'bar',
+  data: {
+    labels: ['活跃→坐等', '坐等→被打到', '被打到→接通', '活跃→接通'],
+    datasets: [
+      { label: '50-女', data: [0.1467, 0.0504, 0.8325, 0.0061], backgroundColor: T50, borderRadius: 3, maxBarThickness: 22 },
+      { label: '50–100女', data: [0.0703, 0.0385, 0.8771, 0.0024], backgroundColor: TMID, borderRadius: 3, maxBarThickness: 22 },
+      { label: '100+女', data: [0.0438, 0.3855, 0.9610, 0.0164], backgroundColor: T100, borderRadius: 3, maxBarThickness: 22 }
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { datalabels: { display: false }, tooltip: pctTip },
+    scales: {
+      y: { beginAtZero: true, ticks: { callback: (v) => (v * 100).toFixed(0) + '%' }, grid: { color: '#eef2f6' } },
+      x: { grid: { display: false } }
+    }
+  }
+});
+
+new Chart(document.getElementById('c4rate'), {
+  type: 'bar',
+  data: {
+    labels,
+    datasets: [
+      { label: '坐等率', data: [0.1467, 0.0703, 0.0438], backgroundColor: T50, borderRadius: 3, maxBarThickness: 28 },
+      { label: '开播率', data: [0.1267, 0.4723, 0.5788], backgroundColor: T100, borderRadius: 3, maxBarThickness: 28 }
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { datalabels: { display: false }, tooltip: pctTip },
+    scales: {
+      y: { beginAtZero: true, ticks: { callback: (v) => (v * 100).toFixed(0) + '%' }, grid: { color: '#eef2f6' } },
+      x: { grid: { display: false } }
+    }
+  }
+});
+bar('c4only', [0.1019, 0.0143, 0.0154], { pct: true });
+
+new Chart(document.getElementById('c5'), {
+  type: 'bar',
+  data: {
+    labels: ['坐等率', '坐等接通率', '开播率', '只坐等不开播'],
+    datasets: [
+      { label: '注册当天', data: [0.1595, 0.0730, 0.0960, 0.1254], backgroundColor: T50, borderRadius: 3, maxBarThickness: 26 },
+      { label: '非注册当天', data: [0.1380, 0.0173, 0.1478, 0.0860], backgroundColor: '#94a3b8', borderRadius: 3, maxBarThickness: 26 }
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { datalabels: { display: false }, tooltip: pctTip },
+    scales: {
+      y: { beginAtZero: true, ticks: { callback: (v) => (v * 100).toFixed(0) + '%' }, grid: { color: '#eef2f6' } },
+      x: { grid: { display: false } }
+    }
+  }
+});
+
+new Chart(document.getElementById('c6pie'), {
+  type: 'doughnut',
+  data: {
+    labels,
+    datasets: [{ data: [142334, 137850, 24654542], backgroundColor: colors }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false, cutout: '58%',
+    plugins: {
+      datalabels: { display: false },
+      legend: { position: 'bottom' },
+      tooltip: {
+        callbacks: {
+          label: (ctx) => {
+            const v = ctx.parsed;
+            const sum = ctx.dataset.data.reduce((a, b) => a + b, 0);
+            return ctx.label + '：' + fmtNum(v) + ' 豆（' + fmtPct(v / sum) + '）';
+          }
+        }
+      }
+    }
+  }
+});
+bar('c6arpu', [521, 2911, 14371]);
+
+new Chart(document.getElementById('c7stack'), {
+  type: 'bar',
+  data: {
+    labels,
+    datasets: [
+      { label: '1 成功接通结束', data: [0.0105, 0.0065, 0.0183], backgroundColor: T100, borderRadius: 2, maxBarThickness: 36 },
+      { label: '2 主动挂断', data: [0.9102, 0.8702, 0.9344], backgroundColor: T50, borderRadius: 2, maxBarThickness: 36 },
+      { label: '3 心跳超时', data: [0.0792, 0.1232, 0.0473], backgroundColor: '#94a3b8', borderRadius: 2, maxBarThickness: 36 }
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { datalabels: { display: false }, tooltip: pctTip },
+    scales: {
+      x: { stacked: true, grid: { display: false } },
+      y: { stacked: true, max: 1, ticks: { callback: (v) => (v * 100).toFixed(0) + '%' }, grid: { color: '#eef2f6' } }
+    }
+  }
+});
+
+new Chart(document.getElementById('c8round'), {
+  type: 'bar',
+  data: {
+    labels,
+    datasets: [
+      { label: '人均（均值）', data: [2, 3, 23], backgroundColor: colors, borderRadius: 3, maxBarThickness: 28 },
+      { label: '中位数', data: [1, 1, 3], backgroundColor: '#cbd5e1', borderRadius: 3, maxBarThickness: 28 }
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { datalabels: { display: false }, tooltip: numTip },
+    scales: {
+      y: { beginAtZero: true, grid: { color: '#eef2f6' } },
+      x: { grid: { display: false } }
+    }
+  }
+});
+
+new Chart(document.getElementById('c8share'), {
+  type: 'doughnut',
+  data: {
+    labels,
+    datasets: [{ data: [12320, 4860, 107364], backgroundColor: colors }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false, cutout: '58%',
+    plugins: {
+      datalabels: { display: false },
+      legend: { position: 'bottom' },
+      tooltip: {
+        callbacks: {
+          label: (ctx) => {
+            const v = ctx.parsed;
+            const sum = ctx.dataset.data.reduce((a, b) => a + b, 0);
+            return ctx.label + '：' + fmtNum(v) + ' 轮（' + fmtPct(v / sum) + '）';
+          }
+        }
+      }
+    }
+  }
+});
+
+bar('c9cnt', [1, 4, 26]);
+
+new Chart(document.getElementById('c9thick'), {
+  type: 'bar',
+  data: {
+    labels,
+    datasets: [
+      { label: '通话中位数（秒）', data: [12, 30, 17], backgroundColor: TMID, borderRadius: 3, maxBarThickness: 26, yAxisID: 'y' },
+      { label: '场均金豆中位数', data: [243, 602, 332], backgroundColor: T50, borderRadius: 3, maxBarThickness: 26, yAxisID: 'y1' }
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: {
+      datalabels: { display: false },
+      tooltip: {
+        callbacks: {
+          label: (ctx) => {
+            const v = ctx.parsed.y;
+            const unit = ctx.dataset.yAxisID === 'y1' ? ' 豆' : ' 秒';
+            return ctx.dataset.label + '：' + fmtNum(v) + unit;
+          }
+        }
+      }
+    },
+    scales: {
+      y: { beginAtZero: true, position: 'left', title: { display: true, text: '秒' }, grid: { color: '#eef2f6' } },
+      y1: { beginAtZero: true, position: 'right', title: { display: true, text: '金豆' }, grid: { display: false } },
+      x: { grid: { display: false } }
+    }
+  }
+});
+
+new Chart(document.getElementById('c10stack'), {
+  type: 'bar',
+  data: {
+    labels,
+    datasets: [
+      { label: '只坐等被叫', data: [46, 1, 413], backgroundColor: T100, maxBarThickness: 36 },
+      { label: '只其他被叫', data: [2954, 805, 1533], backgroundColor: TMID, maxBarThickness: 36 },
+      { label: '两种都有', data: [282, 52, 1352], backgroundColor: '#f59e0b', maxBarThickness: 36 },
+      { label: '两种都无', data: [3268, 529, 1225], backgroundColor: T50, maxBarThickness: 36 }
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { datalabels: { display: false }, tooltip: numTip },
+    scales: {
+      x: { stacked: true, grid: { display: false } },
+      y: { stacked: true, grid: { color: '#eef2f6' } }
+    }
+  }
+});
+
+new Chart(document.getElementById('c11'), {
+  type: 'bar',
+  data: {
+    labels: ['D0 注册当天', 'D1-7', 'D8+'],
+    datasets: [
+      { label: '坐等率', data: [0.1595, 0.2089, 0.1036], backgroundColor: T50, borderRadius: 3, maxBarThickness: 22 },
+      { label: '坐等接通率', data: [0.0730, 0.0172, 0.0174], backgroundColor: TMID, borderRadius: 3, maxBarThickness: 22 },
+      { label: '开播率', data: [0.0960, 0.2495, 0.0983], backgroundColor: T100, borderRadius: 3, maxBarThickness: 22 }
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { datalabels: { display: false }, tooltip: pctTip },
+    scales: {
+      y: { beginAtZero: true, ticks: { callback: (v) => (v * 100).toFixed(0) + '%' }, grid: { color: '#eef2f6' } },
+      x: { grid: { display: false } }
+    }
+  }
+});
+
+const links = document.querySelectorAll('.side a');
+const parts = [...document.querySelectorAll('.part')];
+const io = new IntersectionObserver((entries) => {
+  entries.forEach((e) => {
+    if (!e.isIntersecting) return;
+    links.forEach((a) => a.classList.toggle('on', a.getAttribute('href') === '#' + e.target.id));
+  });
+}, { rootMargin: '-20% 0px -70% 0px' });
+parts.forEach((p) => io.observe(p));
+</script>
+</body>
+</html>

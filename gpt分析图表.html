@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>女坐等分析：核心问题与优化建议</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+  <style>
+    :root {
+      --bg: #eef2f6;
+      --surface: #ffffff;
+      --ink: #0f1c2e;
+      --muted: #64748b;
+      --line: #e2e8f0;
+      --t50: #ea580c;
+      --tmid: #1d4ed8;
+      --t100: #0f766e;
+      --insight-bg: #f0f9ff;
+      --insight-bd: #bae6fd;
+      --insight-ink: #0c4a6e;
+      --warm-bg: #fff7ed;
+      --warm-bd: #fed7aa;
+      --warm-ink: #9a3412;
+      --ok-bg: #f0fdf4;
+      --ok-bd: #bbf7d0;
+      --ok-ink: #166534;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      background: var(--bg); color: var(--ink); line-height: 1.55; font-size: 13px;
+    }
+    .layout { display: flex; min-height: 100vh; }
+    .side {
+      position: sticky; top: 0; align-self: flex-start;
+      width: 176px; flex-shrink: 0; height: 100vh; overflow-y: auto;
+      background: #e4e9ef; border-right: 1px solid var(--line); padding: 16px 0 24px;
+    }
+    .side .brand {
+      padding: 0 14px 14px; font-size: 13px; font-weight: 700;
+      border-bottom: 1px solid var(--line); margin-bottom: 10px; line-height: 1.35;
+    }
+    .side .brand span { display: block; font-size: 12px; font-weight: 500; color: var(--muted); margin-top: 2px; }
+    .side a {
+      display: block; padding: 8px 14px; margin: 1px 8px;
+      font-size: 13.5px; color: var(--muted); text-decoration: none;
+      border-radius: 6px; border-left: 3px solid transparent;
+    }
+    .side a:hover { background: rgba(255,255,255,.75); color: var(--ink); }
+    .side a.on { background: var(--surface); color: var(--t100); font-weight: 600; border-left-color: var(--t100); }
+    .main { flex: 1; min-width: 0; padding: 24px 24px 64px; }
+    .wrap { max-width: 1120px; margin: 0 auto; }
+    .page-title { font-size: 28px; font-weight: 700; letter-spacing: -.02em; margin-bottom: 6px; }
+    .page-meta { font-size: 13px; color: var(--muted); margin-bottom: 14px; line-height: 1.65; }
+    .hero {
+      margin-bottom: 18px;
+    }
+    .hero .lead {
+      background: var(--warm-bg); border: 1px solid var(--warm-bd); color: var(--warm-ink);
+      border-radius: 12px; padding: 14px 16px; font-size: 15px; line-height: 1.7;
+    }
+    .hero .lead b { font-size: 16px; }
+    .hero .lead .sug-line { color: var(--t100); font-weight: 600; }
+    .part {
+      margin-bottom: 16px; padding: 20px 22px 18px;
+      background: var(--surface); border: 1px solid var(--line); border-radius: 12px;
+      scroll-margin-top: 16px;
+    }
+    .part-head { margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px solid var(--line); }
+    .part-head h2 { font-size: 20px; font-weight: 700; margin: 0 0 4px; }
+    .sub { font-size: 13px; color: var(--muted); }
+    .h3 { font-size: 15px; font-weight: 700; margin: 0 0 10px; display: flex; align-items: center; gap: 6px; }
+    .h3::before { content: ""; width: 3px; height: 13px; background: var(--t100); border-radius: 2px; }
+    .s3-head, .s3-wrap {
+      display: grid; grid-template-columns: 1.2fr 1fr; gap: 14px 20px; align-items: stretch;
+    }
+    .s3-head { margin-bottom: 8px; }
+    .s3-head .h3 { margin: 0; }
+    .s3-left { min-height: 0; display: flex; }
+    .s3-left .chart-box { flex: 1; height: auto; min-height: 250px; }
+    .s3-right { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+    .s3-hl {
+      flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center;
+      text-align: center; border: 1px solid var(--warm-bd); background: var(--warm-bg);
+      color: var(--warm-ink); border-radius: 10px; padding: 16px 14px;
+    }
+    .s3-hl .n { font-size: 28px; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1.15; }
+    .s3-hl .d { font-size: 14px; margin-top: 8px; line-height: 1.45; }
+    .s3-right .data.mini { margin-top: 0; }
+    .grid41 { display: grid; grid-template-columns: 1fr 1fr 1fr minmax(240px, 280px); gap: 14px; align-items: stretch; }
+    .kpi {
+      border: 1px solid var(--line); border-radius: 10px; padding: 14px 14px 12px;
+      background: #fff; min-width: 0; text-align: center;
+    }
+    .kpi .n {
+      font-size: 12px; font-weight: 700; color: var(--t50); letter-spacing: .04em; margin-bottom: 8px;
+    }
+    .kpi h3 { font-size: 16px; font-weight: 700; margin-bottom: 6px; }
+    .kpi .field { font-size: 13px; color: var(--muted); margin-bottom: 12px; line-height: 1.45; }
+    .kpi .val {
+      font-size: 28px; font-weight: 700; font-variant-numeric: tabular-nums;
+      letter-spacing: -.03em; color: var(--t50); line-height: 1.1;
+      text-align: center; margin: 2px 0 12px;
+    }
+    .kpi .val.ok { color: var(--t100); }
+    .kpi .hint { font-size: 13.5px; color: var(--muted); line-height: 1.55; }
+    .sug {
+      background: #f8fafc; border: 1px solid var(--line); border-radius: 10px;
+      padding: 16px 16px 14px; display: flex; flex-direction: column;
+    }
+    .sug h3 { font-size: 15px; font-weight: 700; margin-bottom: 14px; }
+    .sug .item { display: flex; gap: 8px; margin-bottom: 0; padding: 10px 0; }
+    .sug .item + .item { border-top: 1px solid var(--line); }
+    .sug .item:last-child { padding-bottom: 0; }
+    .tag {
+      flex-shrink: 0; font-size: 11px; font-weight: 700; padding: 2px 6px; border-radius: 4px;
+      height: fit-content; margin-top: 1px;
+    }
+    .tag.p0 { background: #ffedd5; color: #c2410c; }
+    .tag.p1 { background: #dbeafe; color: #1d4ed8; }
+    .tag.p2 { background: #ccfbf1; color: #0f766e; }
+    .tag.p3 { background: #f1f5f9; color: #475569; }
+    .sug .item p { font-size: 14px; }
+    .sug .item small { display: block; color: var(--muted); font-size: 13px; margin-top: 2px; }
+    .chart-box { position: relative; height: 250px; }
+    .chart-box.tall { height: 280px; }
+    .chart-box.value { height: 260px; }
+    .axis-top {
+      display: grid; grid-template-columns: 1fr auto 1fr; align-items: center;
+      font-size: 13px; font-weight: 600; color: #64748b;
+      padding: 0 2px 2px;
+    }
+    .axis-top > .ax-l { justify-self: start; }
+    .axis-top > .ax-r { justify-self: end; }
+    .cleg { display: flex; gap: 14px; font-weight: 500; color: #475569; }
+    .cleg span { display: flex; align-items: center; gap: 5px; }
+    .cleg i { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+    .cleg i.o { background: var(--t50); }
+    .cleg i.g { background: var(--t100); }
+    .callout {
+      margin-top: 12px; padding: 12px 14px; border-radius: 8px; font-size: 15px; line-height: 1.65;
+    }
+    .callout.i { background: var(--insight-bg); border: 1px solid var(--insight-bd); color: var(--insight-ink); }
+    .callout.c { background: var(--warm-bg); border: 1px solid var(--warm-bd); color: var(--warm-ink); }
+    .callout.ok { background: var(--ok-bg); border: 1px solid var(--ok-bd); color: var(--ok-ink); }
+    .callout b { font-weight: 700; }
+    table.data {
+      width: 100%; border-collapse: collapse; font-size: 14px; font-variant-numeric: tabular-nums;
+      border: 1px solid var(--line); border-radius: 8px; overflow: hidden;
+    }
+    table.data th, table.data td { padding: 8px 10px; border-bottom: 1px solid var(--line); text-align: right; }
+    table.data tr:last-child td { border-bottom: none; }
+    table.data th { background: #f8fafc; color: var(--muted); font-weight: 600; }
+    table.data th:first-child, table.data td:first-child { text-align: left; }
+    table.data.center th, table.data.center td,
+    table.data.center th:first-child, table.data.center td:first-child { text-align: center; }
+    table.data.even { table-layout: fixed; }
+    table.data.even th, table.data.even td,
+    table.data.even th:first-child, table.data.even td:first-child { text-align: center; width: 14.28%; }
+    table.data td.hl { color: var(--t50); font-weight: 700; }
+    table.data tr.hot td { background: #fff7ed; }
+    .mini { margin-top: 10px; }
+    table.rules { margin-top: 0; }
+    table.rules th, table.rules td { text-align: center; }
+    table.rules th:first-child, table.rules td:first-child { text-align: center; }
+    .shots {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;
+      margin-top: 16px;
+    }
+    .shots figure { margin: 0; text-align: center; }
+    .shots img {
+      width: 100%; height: 380px; object-fit: contain; display: block;
+      background: #f8fafc; border: 1px solid var(--line); border-radius: 10px;
+    }
+    .shots figcaption {
+      margin-top: 8px; font-size: 12.5px; color: #475569; line-height: 1.45;
+    }
+    .funnel-wrap {
+      display: grid; grid-template-columns: minmax(0, 1fr) 196px; gap: 10px; align-items: stretch;
+    }
+    .ftable {
+      display: grid; grid-template-columns: 128px 1fr 1fr 1fr;
+      border: 1px solid #eee; border-radius: 10px; overflow: hidden;
+      background: #fff; min-width: 0;
+    }
+    .rlabs, .fcol { display: grid; grid-template-rows: 44px repeat(5, 54px); }
+    .rlabs > div, .fcol .fhead, .fcol .fcell {
+      padding: 4px 8px;
+    }
+    .rlabs > div { border-bottom: 1px solid #e2e8f0; }
+    .rlabs > div:last-child { border-bottom: none; }
+    .rlabs > div {
+      display: flex; align-items: center;
+      font-size: 11px; color: #334155; background: #fafafa;
+      border-right: 1px solid #eee; line-height: 1.25;
+    }
+    .rlabs > div b { display: block; color: #1e293b; font-size: 11.5px; font-weight: 600; }
+    .rlabs > div span { display: block; font-size: 10px; color: #94a3b8; font-weight: 500; }
+    .fcol { position: relative; isolation: isolate; text-align: center; background: #fff; }
+    .fcol::before {
+      content: "";
+      position: absolute; z-index: 0; pointer-events: none;
+      top: 44px; bottom: 6px; left: 8%; right: 8%;
+      opacity: .09;
+    }
+    .fcol::after {
+      content: "";
+      position: absolute; z-index: 3; pointer-events: none;
+      inset: 0;
+      background:
+        linear-gradient(#e2e8f0, #e2e8f0) 0 44px / 100% 1px no-repeat,
+        linear-gradient(#e2e8f0, #e2e8f0) 0 98px / 100% 1px no-repeat,
+        linear-gradient(#e2e8f0, #e2e8f0) 0 152px / 100% 1px no-repeat,
+        linear-gradient(#e2e8f0, #e2e8f0) 0 206px / 100% 1px no-repeat,
+        linear-gradient(#e2e8f0, #e2e8f0) 0 260px / 100% 1px no-repeat;
+    }
+    .fcol.orange::before {
+      background: #e67e22;
+      clip-path: polygon(0 0, 100% 0, 64% 100%, 36% 100%);
+    }
+    .fcol.green::before {
+      background: #27ae60;
+      clip-path: polygon(0 0, 100% 0, 63% 100%, 37% 100%);
+    }
+    .fcol.blue::before {
+      background: #2980b9;
+      clip-path: polygon(0 0, 100% 0, 76% 100%, 24% 100%);
+    }
+    .fhead, .fcell {
+      position: relative; z-index: 2;
+      display: flex; justify-content: center; align-items: center;
+    }
+    .fhead { flex-direction: row; gap: 6px; flex-wrap: wrap; }
+    .fcell { flex-direction: column; }
+    .fhead .t { font-size: 14px; font-weight: 700; line-height: 1.2; }
+    .fhead .s { font-size: 10.5px; font-weight: 500; opacity: .85; white-space: nowrap; }
+    .fcol.orange .t, .fcol.orange .s, .fcol.orange .num { color: #d35400; }
+    .fcol.green .t, .fcol.green .s, .fcol.green .num { color: #1e8449; }
+    .fcol.blue .t, .fcol.blue .s, .fcol.blue .num { color: #1a6aa3; }
+    .fcell .num { font-size: 19px; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -.02em; line-height: 1.1; }
+    .fcell .note { font-size: 13px; color: #94a3b8; margin-top: 2px; }
+    .drop-side {
+      border: 1px solid #f5c9a8; border-radius: 10px; padding: 12px 8px 14px;
+      background: #fff; display: flex; flex-direction: column;
+      text-align: center; min-width: 0;
+    }
+    .drop-side h3 { font-size: 13px; font-weight: 700; color: #d35400; line-height: 1.4; flex-shrink: 0; margin-bottom: 4px; }
+    .drop-side .di {
+      flex: 1; display: flex; flex-direction: column; justify-content: center;
+    }
+    .drop-side .di .k { font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1.1; }
+    .drop-side .di p { font-size: 12.5px; color: #64748b; margin-top: 4px; line-height: 1.4; }
+    .drop-side .di .k.o { color: #e67e22; }
+    .drop-side .di .k.b { color: #2980b9; }
+    .drop-side .di .k.g { color: #27ae60; }
+    .road { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+    .stage {
+      border: 1px solid var(--line); border-radius: 10px; padding: 16px 16px 14px;
+      background: #fff; position: relative; border-left-width: 3px;
+    }
+    .stage.p0 { border-left-color: var(--t50); }
+    .stage.p1 { border-left-color: var(--tmid); }
+    .stage.p3 { border-left-color: var(--t100); }
+    .stage .ph { font-size: 12px; font-weight: 700; margin-bottom: 6px; }
+    .stage.p0 .ph { color: var(--t50); }
+    .stage.p1 .ph { color: var(--tmid); }
+    .stage.p3 .ph { color: var(--t100); }
+    .stage h3 { font-size: 16px; font-weight: 700; margin-bottom: 8px; }
+    .stage p { font-size: 14px; color: var(--muted); line-height: 1.6; }
+    .foot { margin-top: 8px; font-size: 12px; color: var(--muted); text-align: left; }
+    @media (max-width: 1100px) {
+      .grid41 { grid-template-columns: 1fr 1fr; }
+      .s3-head, .s3-wrap, .road, .funnel-wrap { grid-template-columns: 1fr; }
+      .shots { grid-template-columns: 1fr 1fr; }
+      .shots img { height: 320px; }
+      .side { display: none; }
+    }
+  </style>
+</head>
+<body>
+<div class="layout">
+  <nav class="side">
+    <div class="brand">女坐等分析<span>核心问题与建议总览</span></div>
+    <a href="#s0" class="on">弹窗规则</a>
+    <a href="#s1">一 核心结论</a>
+    <a href="#s2">二 全链路漏斗</a>
+    <a href="#s3">三 坐等 vs 开播</a>
+    <a href="#s4">四 坐等价值</a>
+    <a href="#s5">五 坐等被叫分布</a>
+    <a href="#s6">六 50-女分层行为</a>
+    <a href="#s7">七 建议优化</a>
+  </nav>
+  <div class="main"><div class="wrap">
+    <h1 class="page-title">女坐等分析：核心问题与优化建议</h1>
+    <p class="page-meta">周期：20260718–20260817（31 天日均）　|　分母：当天活跃女　|　坐等：log_id=333 且 type=1，被打到只计 receive_type=12</p>
+    <div class="hero">
+      <div class="lead"><b>一句话结论：</b>50-女是坐等低效的核心问题人群，50-女坐等率14.67%，但仅5.04%有接到电话；95%的坐等女未接到，其10.19%的活跃女只坐等不开播，坐等收入仅占视频聊收入0.6%。<span class="sug-line">建议引导50-女去直播，减少坐等入口曝光，把用户引导到更有价值的直播路径。</span></div>
+    </div>
+
+    <section class="part" id="s0">
+      <div class="part-head">
+        <h2>弹窗展示规则和页面截图</h2>
+        <div class="sub">首页弹窗按历史赚取分档：50-女弹随机匹配，50–100女弹去直播，100+女不弹。</div>
+      </div>
+      <div class="h3">首页弹窗展示规则</div>
+      <table class="data rules">
+        <thead>
+          <tr>
+            <th>女用户类型</th>
+            <th>弹窗类型</th>
+            <th>首次出现时机</th>
+            <th>弹窗间隔</th>
+            <th>每日限制</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="hot"><td>50-女</td><td>随机匹配</td><td>停留首页5秒后</td><td>5min</td><td>最多5次</td></tr>
+          <tr><td>50-100女</td><td>去直播</td><td>停留首页5秒后</td><td>5min</td><td>最多5次</td></tr>
+          <tr><td>大于100女</td><td>无</td><td>无</td><td>无</td><td>无</td></tr>
+        </tbody>
+      </table>
+      <div class="shots">
+        <figure>
+          <img src="shots/fig3-popup.png" alt="图1 首页弹窗：随机聊天去匹配">
+          <figcaption>图1 首页弹窗：随机聊天「去匹配」</figcaption>
+        </figure>
+        <figure>
+          <img src="shots/fig4-entry.png" alt="图2 首页入口：随机聊天是第一项">
+          <figcaption>图2 首页入口：随机聊天是第一项</figcaption>
+        </figure>
+        <figure>
+          <img src="shots/fig5-go-match.png" alt="图3 匹配准备页：点击去匹配">
+          <figcaption>图3 匹配准备页：点击「去匹配」进入坐等</figcaption>
+        </figure>
+        <figure>
+          <img src="shots/fig6-matching.png" alt="图4 坐等中：匹配中">
+          <figcaption>图4 坐等中：显示「匹配中」</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section class="part" id="s1">
+      <div class="part-head">
+        <h2>一、核心结论</h2>
+        <div class="sub">50-女问题最突出，断点在「没人打」，不是「不愿意接」。</div>
+      </div>
+      <div class="grid41">
+        <div class="kpi">
+          <div class="n">01</div>
+          <h3>进去多，但没人打</h3>
+          <div class="field">接到电话人数/坐等人数</div>
+          <div class="val">5.04%</div>
+          <div class="hint">VS 100+女为 38.55%，50-女掉点在没人打，约95%的坐等女没有接到电话。</div>
+        </div>
+        <div class="kpi">
+          <div class="n">02</div>
+          <h3>大量空坐，不开播</h3>
+          <div class="field">只坐等不开播人数/活跃女人数</div>
+          <div class="val">10.19%</div>
+          <div class="hint">50-女约 4,548 人/日。50–100女 1.43%，100+女 1.54%。</div>
+        </div>
+        <div class="kpi">
+          <div class="n">03</div>
+          <h3>坐等几乎不赚钱</h3>
+          <div class="field">50-女坐等赚取金豆/总视频聊金豆</div>
+          <div class="val">0.6%</div>
+          <div class="hint">50-女坐等赚取 14.2 万金豆/日，其他视频聊拨打约坐等场景的 166 倍。</div>
+        </div>
+        <div class="sug">
+          <h3>优化建议（优先级）</h3>
+          <div class="item"><span class="tag p0">P0</span><p>50-女弹窗引导去直播<small>随机匹配 → 去直播</small></p></div>
+          <div class="item"><span class="tag p1">P1</span><p>收敛 50-女坐等入口<small>限制坐等入口曝光，减少无效坐等</small></p></div>
+          <div class="item"><span class="tag p2">P2</span><p>分层治理，实验验证<small>A/B测试，观察开播、接通与赚取</small></p></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="part" id="s2">
+      <div class="part-head">
+        <h2>二、坐等全链路漏斗对比</h2>
+        <div class="sub">人数漏斗：活跃女 → 坐等过 → 有来电 → 接通电话</div>
+      </div>
+      <div class="funnel-wrap">
+        <div class="ftable">
+          <div class="rlabs">
+            <div></div>
+            <div><div><b>活跃女</b><span>人/日</span></div></div>
+            <div><div><b>坐等女</b><span>活跃 → 坐等</span></div></div>
+            <div><div><b>有来电女</b><span>坐等 → 来电</span></div></div>
+            <div><div><b>接通女</b><span>来电 → 接通</span></div></div>
+            <div><div><b>活跃到接通率</b><span>活跃 → 接通</span></div></div>
+          </div>
+          <div class="fcol orange">
+            <div class="fhead"><div class="t">50-女</div><div class="s">问题最突出</div></div>
+            <div class="fcell"><div class="num">44,656</div></div>
+            <div class="fcell"><div class="num">14.67%</div><div class="note">≈ 6,550人</div></div>
+            <div class="fcell"><div class="num">5.04%</div><div class="note">≈ 328人</div></div>
+            <div class="fcell"><div class="num">83.25%</div><div class="note">≈ 273人</div></div>
+            <div class="fcell"><div class="num">0.61%</div><div class="note">≈ 273人</div></div>
+          </div>
+          <div class="fcol green">
+            <div class="fhead"><div class="t">50–100女</div></div>
+            <div class="fcell"><div class="num">19,729</div></div>
+            <div class="fcell"><div class="num">7.03%</div><div class="note">≈ 1,387人</div></div>
+            <div class="fcell"><div class="num">3.85%</div><div class="note">≈ 53人</div></div>
+            <div class="fcell"><div class="num">87.71%</div><div class="note">≈ 47人</div></div>
+            <div class="fcell"><div class="num">0.24%</div><div class="note">≈ 47人</div></div>
+          </div>
+          <div class="fcol blue">
+            <div class="fhead"><div class="t">100+女</div><div class="s">坐等有价值</div></div>
+            <div class="fcell"><div class="num">103,352</div></div>
+            <div class="fcell"><div class="num">4.38%</div><div class="note">≈ 4,523人</div></div>
+            <div class="fcell"><div class="num">38.55%</div><div class="note">≈ 1,765人</div></div>
+            <div class="fcell"><div class="num">96.10%</div><div class="note">≈ 1,698人</div></div>
+            <div class="fcell"><div class="num">1.64%</div><div class="note">≈ 1,698人</div></div>
+          </div>
+        </div>
+        <aside class="drop-side">
+          <h3>50-女真正的断点不是“接不接”，而是“有没有人打”</h3>
+          <div class="di"><div class="k o">95%</div><p>坐等女没有坐等通话</p></div>
+          <div class="di"><div class="k b">83%</div><p>被打到后能接通，不是「接不接」的问题</p></div>
+          <div class="di"><div class="k g">0.61%</div><p>活跃女最终通过坐等接到通话，是 100+女的 约37%</p></div>
+        </aside>
+      </div>
+    </section>
+
+    <section class="part" id="s3">
+      <div class="part-head">
+        <h2>三、坐等 vs 开播行为</h2>
+        <div class="sub">只有 50-女坐等率高于开播率；且只坐等不开播人数占比最高。</div>
+      </div>
+      <div class="s3-head">
+        <div class="h3">坐等率 vs 开播率</div>
+        <div class="h3">只坐等不开播</div>
+      </div>
+      <div class="s3-wrap">
+        <div class="s3-left">
+          <div class="chart-box"><canvas id="cWaitLive"></canvas></div>
+        </div>
+        <div class="s3-right">
+          <div class="s3-hl">
+            <div class="n">4,548人/日</div>
+            <div class="d">占50-活跃女10.19%</div>
+          </div>
+          <table class="data mini center">
+            <thead><tr><th>女用户分类</th><th>占比该层活跃女</th><th>人数/日</th></tr></thead>
+            <tbody>
+              <tr class="hot"><td>50-女</td><td class="hl">10.19%</td><td>4,548</td></tr>
+              <tr><td>50–100女</td><td>1.43%</td><td>282</td></tr>
+              <tr><td>100+女</td><td>1.54%</td><td>1,591</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="callout c"><b>结论：</b>50-女是唯一「坐等率高于开播率」的群体，坐等14.67% > 开播12.67%，且50-女只坐等不开播占比10.19%最高，50-100女、100+女均明显以开播为主。</div>
+    </section>
+
+    <section class="part" id="s4">
+      <div class="part-head">
+        <h2>四、坐等价值对比</h2>
+        <div class="sub">真正有价值的接通在 100+女。50-女坐等金豆只占其总视频聊金豆 0.6%。</div>
+      </div>
+      <div class="h3">接通人数与人均金豆</div>
+      <div class="axis-top">
+        <span class="ax-l">接通人数</span>
+        <span class="cleg"><span><i class="o"></i>接通人数</span><span><i class="g"></i>人均金豆</span></span>
+        <span class="ax-r">人均金豆</span>
+      </div>
+      <div class="chart-box value"><canvas id="cValue"></canvas></div>
+      <div class="h3" style="margin-top:16px">50-女坐等女视频聊金豆结构</div>
+      <table class="data mini">
+        <thead><tr><th>路径</th><th>金豆/日</th><th>占比总视频聊金豆</th></tr></thead>
+        <tbody>
+          <tr class="hot"><td>坐等接通</td><td>14.2 万</td><td class="hl">0.6%</td></tr>
+          <tr><td>其他视频聊场景</td><td>2,369.7 万</td><td>99.4%</td></tr>
+        </tbody>
+      </table>
+      <div class="callout i"><b>结论：</b>100+女人均坐等金豆约为50-女的27.6倍。50-女坐等几乎不贡献收入，其真正的视频聊收入来自其他场景，且约为坐等的166倍。</div>
+    </section>
+
+    <section class="part" id="s5">
+      <div class="part-head">
+        <h2>五、坐等女的被叫分布</h2>
+        <div class="sub">分母是坐等女。坐等被叫 = receive_type=12；其他被叫 = 除了坐等场景的电话。</div>
+      </div>
+      <div class="h3">四格结构（占该档坐等女）</div>
+      <div class="chart-box tall"><canvas id="cMix"></canvas></div>
+      <div class="callout c"><b>结论：</b>50-女坐等中，约一半当天两种被叫都没有，是真正的空坐。只坐等被叫仅 46 人（0.7%），坐等不是主要被叫入口。</div>
+    </section>
+
+    <section class="part" id="s6">
+      <div class="part-head">
+        <h2>六、50-女按注册时间分层行为</h2>
+        <div class="sub">（D1-7坐等最严重）</div>
+      </div>
+      <table class="data even">
+        <thead>
+          <tr><th>按注册时间分层</th><th>活跃女</th><th>坐等率</th><th>开播率</th><th>坐等到被打到</th><th>坐等接通率</th><th>只坐等不开播</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>D0 注册当天</td><td>18,193</td><td>15.95%</td><td>9.60%</td><td>8.72%</td><td>7.30%</td><td>12.54%</td></tr>
+          <tr class="hot"><td>D1-7</td><td>8,665</td><td class="hl">20.89%</td><td>24.95%</td><td class="hl">2.14%</td><td>1.72%</td><td>11.44%</td></tr>
+          <tr><td>D8+</td><td>17,798</td><td>10.36%</td><td>9.85%</td><td>2.11%</td><td>1.74%</td><td>7.22%</td></tr>
+        </tbody>
+      </table>
+      <div class="callout i">D1-7坐等率最高达20.89%，但坐等→有来电仅2.14%；同时开播率已达24.95%。说明该阶段用户并非没有直播行为，核心矛盾更偏向坐等匹配效率不足。D8+ 仍有 1,844 人/日坐等，50-当天注册女的只坐等不开播占比最高12.54%，因此更值得尝试将坐等入口转向直播引导。</div>
+    </section>
+
+    <section class="part" id="s7">
+      <div class="part-head">
+        <h2>七、建议优化</h2>
+        <div class="sub">优先引导 50-女去直播；全站入口暂不直接关闭，分层A/B实验后再决定是否进一步收缩。</div>
+      </div>
+      <div class="road">
+        <div class="stage p0">
+          <div class="ph">阶段 1 · P0</div>
+          <h3>立即优化</h3>
+          <p>50-女弹窗引导去直播。随机匹配 → 去直播，把用户引导到更有价值的直播路径。</p>
+        </div>
+        <div class="stage p1">
+          <div class="ph">阶段 2 · P1</div>
+          <h3>收敛入口</h3>
+          <p>收敛 50-女坐等入口，降低曝光/门槛，减少无效坐等。</p>
+        </div>
+        <div class="stage p3">
+          <div class="ph">阶段 3 · P3</div>
+          <h3>实验验证</h3>
+          <p>分层 A/B，看开播、接通、金豆，再决定是否进一步收缩全站坐等入口。</p>
+        </div>
+      </div>
+    </section>
+  </div></div>
+</div>
+<script>
+Chart.register(ChartDataLabels);
+const T50 = '#ea580c', TMID = '#1d4ed8', T100 = '#0f766e';
+const labels = ['50-女', '50–100女', '100+女'];
+Chart.defaults.font.family = '"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif';
+Chart.defaults.font.size = 12;
+Chart.defaults.color = '#475569';
+Chart.defaults.datasets.bar.borderRadius = 6;
+Chart.defaults.datasets.bar.categoryPercentage = 0.56;
+Chart.defaults.datasets.bar.barPercentage = 0.88;
+
+function fmtPct(v, d) { return (v * 100).toFixed(d == null ? 1 : d) + '%'; }
+function pctDec(v) { return v >= 0.1 ? 0 : (v >= 0.01 ? 1 : 2); }
+const pctTip = {
+  callbacks: {
+    label(ctx) {
+      return ctx.dataset.label + ': ' + fmtPct(ctx.raw, pctDec(ctx.raw));
+    }
+  }
+};
+const yAxis = (max) => ({
+  beginAtZero: true, max,
+  ticks: { callback: v => (v * 100).toFixed(0) + '%', font: { size: 12 }, color: '#94a3b8' },
+  grid: { color: '#eef2f6' }, border: { display: false }
+});
+const xAxis = {
+  grid: { display: false },
+  ticks: { maxRotation: 0, autoSkip: false, font: { size: 12 }, color: '#475569' },
+  border: { display: false }
+};
+
+new Chart(document.getElementById('cWaitLive'), {
+  type: 'bar',
+  data: {
+    labels,
+    datasets: [
+      { label: '坐等率', data: [0.1467, 0.0703, 0.0438], backgroundColor: T50, maxBarThickness: 28 },
+      { label: '开播率', data: [0.1311, 0.4724, 0.5784], backgroundColor: T100, maxBarThickness: 28 }
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    layout: { padding: { top: 18 } },
+    plugins: {
+      legend: { position: 'top', align: 'center', labels: { boxWidth: 12, font: { size: 13 } } },
+      tooltip: pctTip,
+      datalabels: {
+        color: '#334155', font: { size: 13, weight: '600' },
+        anchor: 'end', align: 'top', offset: 2, clamp: true,
+        formatter: v => fmtPct(v, 1)
+      }
+    },
+    scales: { y: yAxis(0.72), x: xAxis }
+  }
+});
+
+new Chart(document.getElementById('cValue'), {
+  type: 'bar',
+  data: {
+    labels,
+    datasets: [
+      {
+        label: '接通人数', data: [273, 47, 1698], backgroundColor: T50, yAxisID: 'y',
+        maxBarThickness: 36, borderRadius: { topLeft: 4, topRight: 4 }, order: 2,
+        datalabels: {
+          display: true, color: T50, font: { size: 13, weight: '600' },
+          anchor: 'end',
+          align: ctx => ctx.dataIndex === 2 ? 'right' : 'top',
+          offset: ctx => ctx.dataIndex === 2 ? 16 : 4,
+          padding: ctx => ctx.dataIndex === 2 ? { top: 18, bottom: 0, left: 4, right: 4 } : 4,
+          clip: false, clamp: false,
+          formatter: v => v.toLocaleString('zh-CN')
+        }
+      },
+      {
+        label: '人均金豆', data: [521, 2911, 14371], type: 'line',
+        borderColor: T100, backgroundColor: T100, yAxisID: 'y2',
+        pointRadius: 4, tension: 0, order: 1,
+        datalabels: {
+          display: true, color: T100, font: { size: 13, weight: '600' },
+          anchor: 'center',
+          align: ctx => ctx.dataIndex === 0 ? 'left' : 'top',
+          offset: 8,
+          clip: false, clamp: false,
+          formatter: v => v.toLocaleString('zh-CN')
+        }
+      }
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false, clip: false,
+    layout: { padding: { top: 16, left: 24, right: 28 } },
+    plugins: {
+      legend: { display: false },
+      datalabels: { display: false }
+    },
+    scales: {
+      y: {
+        beginAtZero: true, max: 2000,
+        grid: { color: '#eef2f6' }, border: { display: false },
+        ticks: { color: '#94a3b8', font: { size: 12 }, padding: 4 },
+        afterFit(a) { a.paddingTop = 0; }
+      },
+      y2: {
+        beginAtZero: true, position: 'right', max: 16000,
+        grid: { display: false }, border: { display: false },
+        ticks: { color: '#94a3b8', font: { size: 12 }, padding: 4 },
+        afterFit(a) { a.paddingTop = 0; }
+      },
+      x: xAxis
+    }
+  }
+});
+
+new Chart(document.getElementById('cMix'), {
+  type: 'bar',
+  data: {
+    labels,
+    datasets: [
+      { label: '只坐等被叫', data: [0.007, 0.0007, 0.0913], backgroundColor: '#fdba74' },
+      { label: '只其他被叫', data: [0.451, 0.580, 0.3389], backgroundColor: TMID },
+      { label: '两种都有', data: [0.0431, 0.0375, 0.2989], backgroundColor: T100 },
+      { label: '两种都无', data: [0.4984, 0.3815, 0.2717], backgroundColor: T50 }
+    ]
+  },
+  options: {
+    indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+    plugins: {
+      legend: { position: 'top', align: 'center', labels: { boxWidth: 12, font: { size: 13 } } },
+      tooltip: pctTip,
+      datalabels: {
+        color: '#fff', font: { size: 12, weight: '600' },
+        formatter: v => v >= 0.12 ? fmtPct(v, 0) : ''
+      }
+    },
+    scales: {
+      x: { stacked: true, min: 0, max: 1, ticks: { callback: v => (v * 100).toFixed(0) + '%', color: '#94a3b8', font: { size: 12 } }, grid: { color: '#eef2f6' }, border: { display: false } },
+      y: { stacked: true, grid: { display: false }, border: { display: false }, ticks: { color: '#475569' } }
+    }
+  }
+});
+
+const links = document.querySelectorAll('.side a');
+const parts = [...document.querySelectorAll('.part')];
+const io = new IntersectionObserver((entries) => {
+  entries.forEach((e) => {
+    if (!e.isIntersecting) return;
+    links.forEach((a) => a.classList.toggle('on', a.getAttribute('href') === '#' + e.target.id));
+  });
+}, { rootMargin: '-20% 0px -70% 0px' });
+parts.forEach((p) => io.observe(p));
+</script>
+</body>
+</html>
