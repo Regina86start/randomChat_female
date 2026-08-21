@@ -158,6 +158,12 @@
     table.data.even { table-layout: fixed; }
     table.data.even th, table.data.even td,
     table.data.even th:first-child, table.data.even td:first-child { text-align: center; width: 14.28%; }
+    table.data.cols6 { table-layout: fixed; }
+    table.data.cols6 th, table.data.cols6 td,
+    table.data.cols6 th:first-child, table.data.cols6 td:first-child {
+      text-align: center; width: 16.66%;
+    }
+    table.data.cols6 th { font-size: 12.5px; line-height: 1.35; white-space: normal; }
     table.data td.hl { color: var(--t50); font-weight: 700; }
     table.data tr.hot td { background: #fff7ed; }
     .mini { margin-top: 10px; }
@@ -286,16 +292,17 @@
     <a href="#s1">一 核心结论</a>
     <a href="#s2">二 全链路漏斗</a>
     <a href="#s3">三 坐等 vs 开播</a>
-    <a href="#s4">四 坐等价值</a>
-    <a href="#s5">五 坐等来电分布</a>
-    <a href="#s6">六 50-女分层行为</a>
-    <a href="#s7">七 建议优化</a>
+    <a href="#s4">四 坐等使用深度</a>
+    <a href="#s5">五 坐等价值</a>
+    <a href="#s6">六 坐等来电分布</a>
+    <a href="#s7">七 50-女分层行为</a>
+    <a href="#s8">八 建议优化</a>
   </nav>
   <div class="main"><div class="wrap">
     <h1 class="page-title">女坐等分析：核心问题与优化建议</h1>
     <p class="page-meta">周期：20260718–20260817（31 天日均）　|　分母：当天活跃女　|　坐等：log_id=333 且 type=1，被打到只计 receive_type=12</p>
     <div class="hero">
-      <div class="lead"><b>一句话结论：</b>50-女是坐等低效的核心问题人群，50-女坐等率14.67%，但仅5.04%有接到电话；95%的坐等女未接到，其10.19%的活跃女只坐等不开播，坐等收入仅占视频聊收入0.6%。<span class="sug-line">建议引导50-女去直播，减少坐等入口曝光，把用户引导到更有价值的直播路径。</span></div>
+      <div class="lead"><b>一句话结论：</b>50-女是坐等低效的核心问题人群，50-女坐等率14.67%，但仅5.04%有接到电话；95%的坐等女未接到，其10.19%的活跃女只坐等不开播，坐等收入仅占视频聊收入0.6%。<span class="sug-line">建议引导50-女去直播，隐藏坐等入口，把用户引导到更有价值的直播路径。</span></div>
     </div>
 
     <section class="part" id="s0">
@@ -458,7 +465,32 @@
 
     <section class="part" id="s4">
       <div class="part-head">
-        <h2>四、坐等价值对比</h2>
+        <h2>四、坐等使用深度</h2>
+        <div class="sub">当天坐等女看人均轮次与累计等待时长。50-大量用户只是低频尝试坐等，并非高频依赖；100+才是坐等深度用户。</div>
+      </div>
+      <table class="data cols6">
+        <thead>
+          <tr>
+            <th>赚取分档</th>
+            <th>人均坐等轮次</th>
+            <th>人均坐等轮次中位数</th>
+            <th>人均坐等轮次90分位</th>
+            <th>人均累计等待时长/日/秒</th>
+            <th>人均累计等待时长中位数/日/秒</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>50-女</td><td>2</td><td>1</td><td>3</td><td>47</td><td>21</td></tr>
+          <tr><td>50-100女</td><td>3</td><td>1</td><td>4</td><td>103</td><td>31</td></tr>
+          <tr class="hot"><td>100+女</td><td class="hl">23</td><td>3</td><td>28</td><td class="hl">1,129</td><td>154</td></tr>
+        </tbody>
+      </table>
+      <div class="callout i"><b>结论：</b>100+女人均坐等轮次23，约为50-女（2轮）的11.5倍；人均每日累计等待1,129秒（约18分钟），约为50-女（47秒）的24倍。50-女、50–100女中位数都是1轮，多数人当天只坐一轮。坐等深度集中在100+女，50-女进的人多但用得浅。</div>
+    </section>
+
+    <section class="part" id="s5">
+      <div class="part-head">
+        <h2>五、坐等价值对比</h2>
         <div class="sub">真正有价值的接通在 100+女。50-女坐等金豆只占其总视频聊金豆 0.6%。</div>
       </div>
       <div class="h3">接通人数与人均金豆</div>
@@ -479,9 +511,9 @@
       <div class="callout i"><b>结论：</b>100+女人均坐等金豆约为50-女的27.6倍。50-女坐等几乎不贡献收入，其真正的视频聊收入来自其他场景，且约为坐等的166倍。</div>
     </section>
 
-    <section class="part" id="s5">
+    <section class="part" id="s6">
       <div class="part-head">
-        <h2>五、坐等女的来电分布</h2>
+        <h2>六、坐等女的来电分布</h2>
         <div class="sub">分母是坐等女。坐等来电 = receive_type=12；其他来电 = 除了坐等场景的电话。</div>
       </div>
       <div class="h3">四格结构（占该档坐等女）</div>
@@ -489,9 +521,9 @@
       <div class="callout c"><b>结论：</b>50-女坐等中，约一半当天两种来电都没有，是真正的空坐。只坐等来电仅 46 人（0.7%），坐等不是主要视频聊入口。</div>
     </section>
 
-    <section class="part" id="s6">
+    <section class="part" id="s7">
       <div class="part-head">
-        <h2>六、50-女按注册时间分层行为</h2>
+        <h2>七、50-女按注册时间分层行为</h2>
         <div class="sub">（D1-7坐等最严重）</div>
       </div>
       <table class="data even">
@@ -507,21 +539,21 @@
       <div class="callout i">D1-7坐等率最高达20.89%，但坐等→有来电仅2.14%；同时开播率已达24.95%。说明该阶段用户并非没有直播行为，核心矛盾更偏向坐等匹配效率不足。D8+ 仍有 1,844 人/日坐等，50-当天注册女的只坐等不开播占比最高12.54%，因此更值得尝试将坐等入口转向直播引导。</div>
     </section>
 
-    <section class="part" id="s7">
+    <section class="part" id="s8">
       <div class="part-head">
-        <h2>七、建议优化</h2>
+        <h2>八、建议优化</h2>
         <div class="sub">优先引导 50-女去直播；全站入口暂不直接关闭，分层A/B实验后再决定是否进一步收缩。</div>
       </div>
       <div class="road">
         <div class="stage p0">
           <div class="ph">阶段 1 · P0</div>
-          <h3>引导去直播</h3>
+          <h3>引导50-女去直播</h3>
           <p>50-女弹窗引导去直播。随机匹配 → 去直播，把用户引导到更有价值的直播路径。</p>
         </div>
         <div class="stage p1">
           <div class="ph">阶段 2 · P1</div>
           <h3>隐藏坐等入口</h3>
-          <p>隐藏 50-女坐等入口，降低曝光/门槛，减少无效坐等。</p>
+          <p>隐藏 50-女坐等入口，降低曝光/入口，减少无效坐等。</p>
         </div>
         <div class="stage p3">
           <div class="ph">阶段 3 · P3</div>
@@ -655,8 +687,8 @@ new Chart(document.getElementById('cMix'), {
   data: {
     labels,
     datasets: [
-      { label: '只坐等来电', data: [0.007, 0.0007, 0.0913], backgroundColor: '#fdba74' },
-      { label: '只其他来电', data: [0.451, 0.580, 0.3389], backgroundColor: TMID },
+      { label: '坐等来电', data: [0.007, 0.0007, 0.0913], backgroundColor: '#fdba74' },
+      { label: '非坐等来电', data: [0.451, 0.580, 0.3389], backgroundColor: TMID },
       { label: '两种都有', data: [0.0431, 0.0375, 0.2989], backgroundColor: T100 },
       { label: '两种都无', data: [0.4984, 0.3815, 0.2717], backgroundColor: T50 }
     ]
