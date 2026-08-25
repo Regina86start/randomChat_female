@@ -108,11 +108,17 @@
     .sug {
       background: #f8fafc; border: 1px solid var(--line); border-radius: 10px;
       padding: 16px 16px 14px; display: flex; flex-direction: column;
+      min-height: 100%;
     }
-    .sug h3 { font-size: 15px; font-weight: 700; margin-bottom: 14px; }
-    .sug .item { display: flex; gap: 8px; margin-bottom: 0; padding: 10px 0; }
+    .sug h3 { font-size: 17px; font-weight: 700; margin-bottom: 12px; flex-shrink: 0; }
+    .sug-list {
+      flex: 1; display: flex; flex-direction: column; min-height: 0;
+    }
+    .sug .item {
+      flex: 1; display: flex; gap: 8px; align-items: center;
+      margin-bottom: 0; padding: 0;
+    }
     .sug .item + .item { border-top: 1px solid var(--line); }
-    .sug .item:last-child { padding-bottom: 0; }
     .tag {
       flex-shrink: 0; font-size: 11px; font-weight: 700; padding: 2px 6px; border-radius: 4px;
       height: fit-content; margin-top: 1px;
@@ -514,8 +520,10 @@
         </div>
         <div class="sug">
           <h3>优化建议（优先级）</h3>
-          <div class="item"><span class="tag p0">P0</span><p>50-女弹窗引导去直播<small>随机匹配 → 去直播</small></p></div>
-          <div class="item"><span class="tag p1">P1</span><p>隐藏全站女坐等入口<small>隐藏坐等入口曝光，减少无效坐等</small></p></div>
+          <div class="sug-list">
+            <div class="item"><span class="tag p0">P0</span><p>50-女弹窗引导去直播<small>随机匹配 → 去直播</small></p></div>
+            <div class="item"><span class="tag p1">P1</span><p>隐藏全站女坐等入口<small>隐藏坐等入口曝光，减少无效坐等</small></p></div>
+          </div>
         </div>
       </div>
     </section>
