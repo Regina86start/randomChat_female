@@ -202,6 +202,12 @@
       display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;
       margin-top: 16px;
     }
+    .shots.cols3 {
+      grid-template-columns: repeat(3, minmax(240px, 320px));
+      justify-content: center;
+      gap: 24px;
+    }
+    .shots.cols3 img { height: auto; }
     .shots figure { margin: 0; text-align: center; }
     .shots img {
       width: 100%; height: 380px; object-fit: contain; display: block;
@@ -307,6 +313,8 @@
       .s3-head, .s3-wrap, .road, .funnel-wrap, .vs, .tl, .card-4 { grid-template-columns: 1fr; }
       .shots { grid-template-columns: 1fr 1fr; }
       .shots img { height: 320px; }
+      .shots.cols3 { grid-template-columns: minmax(240px, 320px); }
+      .shots.cols3 img { height: auto; }
       .side { display: none; }
     }
   </style>
@@ -328,7 +336,7 @@
     <h1 class="page-title">女速配坐等分析：核心问题与优化建议</h1>
     <p class="page-meta">周期：20260718–20260817（31 天日均）　|　分母：当天活跃女　|　坐等：log_id=333 且 type=1，被打到只计 receive_type=12</p>
     <div class="hero">
-      <div class="lead"><b>结论：</b>50-女是速配坐等低效的核心问题人群，50-女坐等率14.67%，但95%的坐等女未接到电话。其10.19%的活跃女只坐等不开播，坐等收入仅占视频聊收入0.6%。同时全站坐等人数仅占活跃女7.43%。<span class="sug-line">建议①弹窗：50-女去速配坐等弹窗改为去直播，②坐等入口：隐藏全站女坐等入口，把用户引导到更有价值的直播坐等路径。</span></div>
+      <div class="lead"><b>结论：</b>50-女是速配坐等低效的核心问题人群，50-女坐等率14.67%，但95%的坐等女未接到电话。其10.19%的活跃女只坐等不开播，坐等收入仅占视频聊收入0.6%。同时全站坐等人数仅占活跃女7.43%。<span class="sug-line">建议①弹窗：50-女去速配坐等弹窗改为去直播，②坐等页面：退出全屏等待，改为坐等小窗/坐等顶部悬浮条，让用户保持“高优先级被匹配”的状态，同时不要让等待本身占据用户的全部时间。</span></div>
     </div>
 
     <section class="part" id="s0">
@@ -371,6 +379,7 @@
           <figcaption>图4 坐等中：显示「匹配中」</figcaption>
         </figure>
       </div>
+      <div class="callout c"><b>结论：</b>首页弹窗把 50-女导向「去匹配」，点进去后是全屏「匹配中」。坐等期间无法聊天、看直播或探索其他社交，等待本身占满了用户时间。</div>
     </section>
 
     <section class="part" id="s1">
@@ -607,9 +616,24 @@
           <h3>优化建议（优先级）</h3>
           <div class="sug-list">
             <div class="item"><span class="tag p0">P0</span><p>50-女弹窗引导去直播<small>随机匹配 → 去直播</small></p></div>
-            <div class="item"><span class="tag p1">P1</span><p>隐藏全站女坐等入口<small>隐藏坐等入口曝光，减少无效坐等</small></p></div>
+            <div class="item"><span class="tag p1">P1</span><p>退出全屏等待<small>让用户保持匹配状态的同时增加用户探索社交</small></p></div>
           </div>
         </div>
+      </div>
+      <div class="h3" style="margin-top:16px">非全屏坐等优化样式</div>
+      <div class="shots cols3">
+        <figure>
+          <img src="shots/fig7-wait-bar-bottom.jpg" alt="方案A 底部悬浮条">
+          <figcaption>方案A：底部悬浮条</figcaption>
+        </figure>
+        <figure>
+          <img src="shots/fig8-wait-bar-top.jpg" alt="方案B 顶部悬浮条">
+          <figcaption>方案B：顶部悬浮条</figcaption>
+        </figure>
+        <figure>
+          <img src="shots/fig9-wait-pip.png" alt="方案C 右下角小窗">
+          <figcaption>方案C：右下角小窗</figcaption>
+        </figure>
       </div>
     </section>
   </div></div>
